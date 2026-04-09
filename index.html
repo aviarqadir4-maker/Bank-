@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f0c29">
+    <link rel="apple-touch-icon" href="me.png">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battery Pro - Ultra</title>
+    
+    <style>
+        :root {
+            --primary-color: #00ff88;
+            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        }
+
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+
+        body {
+            background: var(--bg-gradient);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow: hidden;
+            transition: background 0.8s ease;
+        }
+
+        .settings-btn {
+            position: absolute; top: 30px; left: 30px;
+            font-size: 1.5rem; cursor: pointer; 
+            background: rgba(0, 0, 0, 0);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white; width: 50px; height: 50px; border-radius: 15px;
+            backdrop-filter: blur(15px); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+        }
+
+        .menu {
+            visibility: hidden; opacity: 0; position: absolute; top: 90px; left: 30px;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1); padding: 20px;
+            border-radius: 25px; width: 280px; z-index: 1001;
+            transform: translateY(-20px); transition: 0.4s ease;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .menu.active { visibility: visible; opacity: 1; transform: translateY(0); }
+        .menu p { font-size: 0.85rem; opacity: 0.6; margin: 15px 0 8px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 5px;}
+        
+        .menu button {
+            width: 100%; padding: 12px; margin: 4px 0; border: none;
+            border-radius: 12px; cursor: pointer; font-weight: 500;
+            color: white; background: rgba(255, 255, 255, 0.05); transition: 0.2s;
+            text-align: right;
+        }
+        .menu button:hover { background: rgba(255, 255, 255, 0.15); color: var(--primary-color); }
+
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 40px; border-radius: 60px;
+            text-align: center; width: 350px; min-height: 500px;
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+
+        .header-title { font-size: 1.3rem; font-weight: 300; opacity: 0.5; margin-bottom: 20px; }
+
+        #battery-ui, #circle-ui, #only-number-ui { display: none; align-items: center; justify-content: center; flex-grow: 1; flex-direction: column; }
+        
+        .battery-shape {
+            width: 85px; height: 160px; border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 18px; position: relative; padding: 5px; display: flex; align-items: flex-end;
+        }
+        .battery-shape::after {
+            content: ''; position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 8px; background: rgba(255, 255, 255, 0.2); border-radius: 4px 4px 0 0;
+        }
+        .fill { width: 100%; height: 0%; border-radius: 12px; transition: 1.5s cubic-bezier(0.2, 1, 0.3, 1); }
+
+        svg { width: 220px; height: 220px; transform: rotate(-90deg); }
+        .track { stroke: rgba(255, 255, 255, 0.05); fill: none; stroke-width: 12; }
+        .progress { fill: none; stroke-width: 12; stroke-linecap: round; transition: 1.5s ease; }
+
+        .percent-text { font-size: 4.5rem; font-weight: 900; margin-top: 10px; }
+        #only-number-ui .percent-text { font-size: 7.5rem; }
+
+        .status-tag { 
+            margin-top: 15px; padding: 12px; background: rgba(255, 255, 255, 0.05); 
+            border-radius: 100px; font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<button class="settings-btn" onclick="toggleMenu()">⚙️</button>
+
+<div class="menu" id="menu">
+    <p>شێوازی بینین</p>
+    <button onclick="changeView('battery')">دیزاینی ستوونی 🔋</button>
+    <button onclick="changeView('circle')">دیزاینی بازنەیی ◯</button>
+    <button onclick="changeView('number')">تەنها ژمارە 🔢</button>
+    
+    <p>ڕەنگی پشتەوە</p>
+    <div class="color-grid">
+        <button onclick="changeBg('linear-gradient(135deg, #0f0c29, #302b63, #24243e)')">شینی تاریک</button>
+        <button onclick="changeBg('linear-gradient(135deg, #000000, #434343)')">ڕەش</button>
+        <button onclick="changeBg('linear-gradient(135deg, #1d2671, #c33764)')">مۆر</button>
+        <button onclick="changeBg('linear-gradient(135deg, #11998e, #38ef7d)')">سەوز</button>
+        <button onclick="changeBg('linear-gradient(135deg, #ff9966, #ff5e62)')">پرتەقاڵی</button>
+        <button onclick="changeBg('linear-gradient(135deg, #4568dc, #b06ab3)')">شین</button>
+        <button onclick="changeBg('linear-gradient(135deg, #c2b280, #a68b5b, #8b6f47)')">خاکی</button>
+        <button onclick="changeBg('linear-gradient(135deg, #2193b0, #6dd5ed, #1e3c72)')">شین کاڵ</button>
+    </div>
+</div>
+
+<div class="glass-card">
+    <h2 class="header-title">شەحنی مۆبایل</h2>
+
+    <div id="battery-ui">
+        <div class="battery-shape"><div id="bat-fill" class="fill"></div></div>
+        <div id="text-b" class="percent-text">0%</div>
+    </div>
+
+    <div id="circle-ui">
+        <svg viewBox="0 0 220 220">
+            <circle class="track" cx="110" cy="110" r="100"></circle>
+            <circle id="circle-bar" class="progress" cx="110" cy="110" r="100"></circle>
+        </svg>
+        <div id="text-c" class="percent-text" style="position: absolute;">0%</div>
+    </div>
+
+    <div id="only-number-ui"><div id="text-n" class="percent-text">0%</div></div>
+
+    <div id="status" class="status-tag">...</div>
+</div>
+
+<script>
+    function toggleMenu() { document.getElementById('menu').classList.toggle('active'); }
+
+    function changeBg(bg) {
+        document.body.style.background = bg;
+        localStorage.setItem('savedBg', bg);
+        toggleMenu();
+    }
+
+    function applyView(mode) {
+        document.getElementById('battery-ui').style.display = (mode === 'battery' ? 'flex' : 'none');
+        document.getElementById('circle-ui').style.display = (mode === 'circle' ? 'flex' : 'none');
+        document.getElementById('only-number-ui').style.display = (mode === 'number' ? 'flex' : 'none');
+        localStorage.setItem('savedView', mode);
+    }
+
+    function changeView(mode) { applyView(mode); toggleMenu(); }
+
+    window.onload = () => {
+        const bg = localStorage.getItem('savedBg');
+        const view = localStorage.getItem('savedView');
+        if (bg) document.body.style.background = bg;
+        applyView(view || 'battery');
+        update();
+    };
+
+    function update() {
+        if(!navigator.getBattery) return;
+        navigator.getBattery().then(batt => {
+            const level = Math.round(batt.level * 100);
+            const color = level <= 20 ? "#ff4b2b" : (level <= 50 ? "#f9d423" : "#00ff88");
+            document.documentElement.style.setProperty('--primary-color', color);
+            
+            const p = level + "%";
+            document.getElementById('text-b').innerText = p;
+            document.getElementById('text-c').innerText = p;
+            document.getElementById('text-n').innerText = p;
+            document.getElementById('text-n').style.color = color;
+
+            const fill = document.getElementById('bat-fill');
+            fill.style.height = level + "%";
+            fill.style.background = color;
+            fill.style.boxShadow = `0 0 30px ${color}88`;
+
+            const circleBar = document.getElementById('circle-bar');
+            const circumference = 2 * Math.PI * 100;
+            circleBar.style.strokeDasharray = circumference;
+            circleBar.style.strokeDashoffset = circumference - (circumference * level / 100);
+            circleBar.style.stroke = color;
+
+            document.getElementById('status').innerText = batt.charging ? "⚡ بارگاوی دەبێتەوە..." : "لە شەحن نییە";
+        });
+    }
+
+    if('getBattery' in navigator) {
+        navigator.getBattery().then(b => {
+            b.onlevelchange = update;
+            b.onchargingchange = update;
+        });
+    }
+</script>
+</body>
+</html>
+.
